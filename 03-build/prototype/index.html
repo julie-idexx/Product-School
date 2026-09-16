@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Streakly — Comeback Screen Prototype</title>
+<style>
+  :root {
+    --clarity-blue: #0B76F0;
+    --clarity-blue-light: #9CDCFF;
+    --clarity-blue-dark: #00337F;
+    --charcoal: #31353D;
+    --gray: #9A9B9C;
+    --light-gray: #F0F0F0;
+    --white: #FFFFFF;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: var(--light-gray);
+    color: var(--charcoal);
+    margin: 0;
+    padding: 40px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+  }
+
+  .demo-note {
+    max-width: 390px;
+    font-size: 12px;
+    color: var(--gray);
+    margin-bottom: 16px;
+    text-align: center;
+  }
+
+  .phone {
+    width: 375px;
+    max-width: 100%;
+    height: 720px;
+    background: var(--white);
+    border-radius: 32px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.18);
+    padding: 28px 22px;
+    position: relative;
+    overflow: hidden;
+    border: 8px solid var(--charcoal);
+  }
+
+  .screen {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    animation: fadeIn 0.25s ease;
+  }
+
+  .screen[hidden] { display: none; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .logo {
+    font-size: 12px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    color: var(--gray);
+    margin-bottom: 18px;
+  }
+
+  h1 {
+    font-size: 22px;
+    margin: 0 0 6px;
+    color: var(--charcoal);
+  }
+
+  .subcopy {
+    font-size: 14px;
+    color: var(--gray);
+    margin: 0 0 20px;
+    line-height: 1.4;
+  }
+
+  .card {
+    background: var(--light-gray);
+    border-radius: 16px;
+    padding: 18px;
+    margin-bottom: 14px;
+  }
+
+  .best-streak-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: linear-gradient(135deg, var(--clarity-blue-dark), var(--clarity-blue));
+    color: var(--white);
+  }
+
+  .flame { font-size: 32px; line-height: 1; }
+
+  .best-streak-label {
+    font-size: 12px;
+    opacity: 0.85;
+    margin: 0 0 2px;
+  }
+
+  .best-streak-value {
+    font-size: 24px;
+    font-weight: bold;
+    margin: 0;
+  }
+
+  .best-streak-caption {
+    font-size: 11px;
+    opacity: 0.8;
+    margin: 2px 0 0;
+  }
+
+  .lesson-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: border-color 0.15s;
+  }
+
+  .lesson-card:hover { border-color: var(--clarity-blue-light); }
+
+  .lesson-meta { font-size: 11px; color: var(--gray); margin: 0 0 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .lesson-title { font-size: 15px; font-weight: bold; margin: 0; color: var(--charcoal); }
+  .lesson-duration {
+    font-size: 11px;
+    color: var(--clarity-blue-dark);
+    background: var(--clarity-blue-light);
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-weight: bold;
+    white-space: nowrap;
+  }
+
+  .arrow { font-size: 18px; color: var(--clarity-blue); margin-left: 10px; }
+
+  .freeze-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    border: 1px solid var(--light-gray);
+  }
+
+  .freeze-card.active { border: 1px solid var(--clarity-blue); background: #EAF4FF; }
+
+  .freeze-title { font-size: 14px; font-weight: bold; margin: 0 0 4px; }
+  .freeze-desc { font-size: 12px; color: var(--gray); margin: 0; line-height: 1.4; }
+  .freeze-confirm { font-size: 12px; color: var(--clarity-blue-dark); font-weight: bold; margin-top: 8px; display: none; }
+  .freeze-card.active .freeze-confirm { display: block; }
+
+  .toggle {
+    width: 44px;
+    height: 26px;
+    background: var(--gray);
+    border-radius: 999px;
+    position: relative;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.2s;
+    border: none;
+  }
+
+  .toggle.on { background: var(--clarity-blue); }
+
+  .toggle-knob {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 20px;
+    height: 20px;
+    background: var(--white);
+    border-radius: 50%;
+    transition: left 0.2s;
+  }
+
+  .toggle.on .toggle-knob { left: 21px; }
+
+  .spacer { flex: 1; }
+
+  /* Lesson screen */
+  .lesson-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 22px;
+  }
+
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--light-gray); }
+  .dot.done { background: var(--clarity-blue); }
+
+  .lesson-header-title { font-size: 13px; color: var(--gray); font-weight: bold; }
+
+  .prompt-card {
+    background: var(--light-gray);
+    border-radius: 16px;
+    padding: 22px 18px;
+    margin-bottom: 18px;
+  }
+
+  .prompt-label { font-size: 11px; color: var(--gray); text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 8px; }
+  .prompt-text { font-size: 19px; font-weight: bold; margin: 0; color: var(--charcoal); }
+
+  .option {
+    width: 100%;
+    text-align: left;
+    background: var(--white);
+    border: 1.5px solid var(--light-gray);
+    border-radius: 12px;
+    padding: 14px 16px;
+    font-size: 14px;
+    font-family: Arial, Helvetica, sans-serif;
+    color: var(--charcoal);
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+
+  .option:hover:not(.correct):not(.incorrect):not(:disabled) { border-color: var(--clarity-blue-light); }
+
+  .option.correct { border-color: var(--clarity-blue); background: #EAF4FF; font-weight: bold; }
+  .option.incorrect { border-color: var(--gray); background: var(--light-gray); color: var(--gray); }
+  .option:disabled { cursor: default; }
+
+  .feedback {
+    font-size: 13px;
+    font-weight: bold;
+    color: var(--clarity-blue-dark);
+    margin: 4px 0 16px;
+    min-height: 16px;
+  }
+
+  .btn-primary {
+    background: var(--clarity-blue);
+    color: var(--white);
+    border: none;
+    border-radius: 999px;
+    padding: 14px;
+    font-size: 15px;
+    font-weight: bold;
+    font-family: Arial, Helvetica, sans-serif;
+    cursor: pointer;
+    width: 100%;
+  }
+
+  .btn-primary:disabled { background: var(--gray); cursor: default; }
+
+  .btn-text {
+    background: none;
+    border: none;
+    color: var(--gray);
+    font-size: 12px;
+    font-family: Arial, Helvetica, sans-serif;
+    text-decoration: underline;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+
+  /* Completion screen */
+  .complete-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    text-align: center;
+  }
+
+  .celebrate { font-size: 48px; margin-bottom: 10px; }
+
+  .complete-title { font-size: 21px; font-weight: bold; margin: 0 0 8px; }
+  .complete-sub { font-size: 13px; color: var(--gray); margin: 0 0 24px; line-height: 1.4; }
+
+  .stat-row { display: flex; gap: 12px; margin-bottom: 20px; width: 100%; }
+
+  .stat-box {
+    flex: 1;
+    background: var(--light-gray);
+    border-radius: 14px;
+    padding: 14px;
+  }
+
+  .stat-box .val { font-size: 20px; font-weight: bold; color: var(--clarity-blue-dark); }
+  .stat-box .lbl { font-size: 11px; color: var(--gray); margin-top: 2px; }
+
+  .badge {
+    font-size: 12px;
+    background: #EAF4FF;
+    color: var(--clarity-blue-dark);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-weight: bold;
+    margin-bottom: 24px;
+  }
+</style>
+</head>
+<body>
+
+<div class="demo-note">Interactive prototype — Streakly Comeback screen. Palette approximates the IDEXX brand (Clarity Blue + Arial); the internal Spot component library wasn't available to reference directly.</div>
+
+<div class="phone">
+
+  <!-- Screen 1: Comeback screen -->
+  <div class="screen" id="screen-comeback">
+    <div class="logo">STREAKLY</div>
+    <h1>Hey Alex 👋</h1>
+    <p class="subcopy">It's been a couple of days — your progress is still here, and it's easy to pick back up.</p>
+
+    <div class="card best-streak-card">
+      <div class="flame">🔥</div>
+      <div>
+        <p class="best-streak-label">Your best streak</p>
+        <p class="best-streak-value">12 days</p>
+        <p class="best-streak-caption">That record is yours for good.</p>
+      </div>
+    </div>
+
+    <div class="card lesson-card" id="lesson-entry" onclick="startLesson()">
+      <div>
+        <p class="lesson-meta">French · Basics</p>
+        <p class="lesson-title">Lesson 14: Common Phrases</p>
+      </div>
+      <div style="display:flex; align-items:center;">
+        <span class="lesson-duration">60 sec</span>
+        <span class="arrow">→</span>
+      </div>
+    </div>
+
+    <div class="spacer"></div>
+
+    <div class="card freeze-card" id="freeze-card">
+      <div>
+        <p class="freeze-title">Bank a Streak Freeze</p>
+        <p class="freeze-desc">Miss a day next time and this automatically protects your streak — no reset.</p>
+        <p class="freeze-confirm">✓ Freeze banked for your next miss.</p>
+      </div>
+      <button class="toggle" id="freeze-toggle" onclick="toggleFreeze()">
+        <div class="toggle-knob"></div>
+      </button>
+    </div>
+  </div>
+
+  <!-- Screen 2: Lesson -->
+  <div class="screen" id="screen-lesson" hidden>
+    <div class="lesson-header">
+      <div class="dot" id="dot-1"></div>
+      <div class="dot" id="dot-2"></div>
+      <div class="lesson-header-title">Lesson 14: Common Phrases</div>
+    </div>
+
+    <div class="prompt-card">
+      <p class="prompt-label" id="prompt-label">Question 1 of 2</p>
+      <p class="prompt-text" id="prompt-text">How do you say "Thank you" in French?</p>
+    </div>
+
+    <div id="options-container"></div>
+
+    <p class="feedback" id="feedback"></p>
+
+    <div class="spacer"></div>
+
+    <button class="btn-primary" id="continue-btn" disabled onclick="nextCard()">Continue</button>
+  </div>
+
+  <!-- Screen 3: Completion -->
+  <div class="screen" id="screen-complete" hidden>
+    <div class="complete-wrap">
+      <div class="celebrate">🎉</div>
+      <p class="complete-title">You're back in!</p>
+      <p class="complete-sub">Nice work finishing today's lesson. A new streak starts now — and your record is still yours.</p>
+
+      <div class="stat-row">
+        <div class="stat-box">
+          <div class="val">Day 1</div>
+          <div class="lbl">New streak</div>
+        </div>
+        <div class="stat-box">
+          <div class="val">12 days</div>
+          <div class="lbl">Best streak</div>
+        </div>
+      </div>
+
+      <div class="badge" id="freeze-badge" style="display:none;">✓ Freeze banked for next time</div>
+
+      <button class="btn-text" onclick="resetDemo()">↺ Restart demo</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const cards = [
+    {
+      question: 'How do you say "Thank you" in French?',
+      options: ['Merci', 'Bonjour', 'Au revoir', "S'il vous plaît"],
+      correctIndex: 0,
+      correctFeedback: 'Nice — that\'s right.',
+      incorrectFeedback: 'Not quite — it\'s "Merci."'
+    },
+    {
+      question: 'How do you say "Good morning" in French?',
+      options: ['Bonsoir', 'Bonjour', 'Bonne nuit', 'Salut'],
+      correctIndex: 1,
+      correctFeedback: 'Exactly right.',
+      incorrectFeedback: 'Close — it\'s "Bonjour."'
+    }
+  ];
+
+  let cardIndex = 0;
+  let freezeOn = false;
+
+  function toggleFreeze() {
+    freezeOn = !freezeOn;
+    document.getElementById('freeze-toggle').classList.toggle('on', freezeOn);
+    document.getElementById('freeze-card').classList.toggle('active', freezeOn);
+  }
+
+  function startLesson() {
+    cardIndex = 0;
+    show('screen-lesson');
+    renderCard();
+  }
+
+  function renderCard() {
+    const card = cards[cardIndex];
+    document.getElementById('prompt-label').textContent = `Question ${cardIndex + 1} of ${cards.length}`;
+    document.getElementById('prompt-text').textContent = card.question;
+    document.getElementById('feedback').textContent = '';
+    document.getElementById('continue-btn').disabled = true;
+    document.getElementById('continue-btn').textContent = cardIndex === cards.length - 1 ? 'Finish' : 'Continue';
+
+    for (let i = 1; i <= cards.length; i++) {
+      document.getElementById(`dot-${i}`).classList.toggle('done', i <= cardIndex);
+    }
+
+    const container = document.getElementById('options-container');
+    container.innerHTML = '';
+    card.options.forEach((opt, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'option';
+      btn.textContent = opt;
+      btn.onclick = () => selectOption(i);
+      container.appendChild(btn);
+    });
+  }
+
+  function selectOption(i) {
+    const card = cards[cardIndex];
+    const buttons = document.querySelectorAll('#options-container .option');
+    buttons.forEach((btn, idx) => {
+      btn.disabled = true;
+      if (idx === card.correctIndex) btn.classList.add('correct');
+      else if (idx === i) btn.classList.add('incorrect');
+    });
+    document.getElementById('feedback').textContent = i === card.correctIndex ? card.correctFeedback : card.incorrectFeedback;
+    document.getElementById('continue-btn').disabled = false;
+  }
+
+  function nextCard() {
+    cardIndex++;
+    if (cardIndex >= cards.length) {
+      finishLesson();
+    } else {
+      renderCard();
+    }
+  }
+
+  function finishLesson() {
+    show('screen-complete');
+    document.getElementById('freeze-badge').style.display = freezeOn ? 'inline-block' : 'none';
+  }
+
+  function resetDemo() {
+    freezeOn = false;
+    document.getElementById('freeze-toggle').classList.remove('on');
+    document.getElementById('freeze-card').classList.remove('active');
+    show('screen-comeback');
+  }
+
+  function show(id) {
+    ['screen-comeback', 'screen-lesson', 'screen-complete'].forEach(s => {
+      document.getElementById(s).hidden = (s !== id);
+    });
+  }
+</script>
+
+</body>
+</html>
