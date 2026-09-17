@@ -186,6 +186,66 @@ def standing_top_nps_theme(nps_path):
     return m.group(1).strip() if m else None
 
 
+# ---------------------------------------------------------------- Anomaly diagnosis connection
+
+def read_outcome_log_entries(path, since, until):
+    """Parse agents/anomaly_diagnosis.py's outcome-log.md format. Returns a list of
+    {date, metric, delta_pts, status, top_hypothesis, top_confidence, resolved: bool,
+    what_happened} dicts for entries whose date falls in [since, until]."""
+    if not os.path.exists(path):
+        return []
+    with open(path) as f:
+        text = f.read()
+
+    entries = []
+    for m in re.finditer(
+        r"^##\s*(\d{4}-\d{2}-\d{2})\s+[\d:]+\s+—\s+(\S+)\s+moved\s+([+-]\d+)pts\s+\((\w+)\)\n\n"
+        r"(\|.*?\n(?:\|.*?\n)+)", text, re.MULTILINE,
+    ):
+        d = datetime.strptime(m.group(1), "%Y-%m-%d").date()
+        if not (since <= d <= until):
+            continue
+        table = m.group(5)
+        rows = [line for line in table.splitlines() if line.startswith("|") and "---" not in line][1:]
+        if not rows:
+            continue
+        cells = [c.strip() for c in rows[0].split("|")[1:-1]]
+        if len(cells) < 4:
+            continue
+        _, hyp_text, conf, outcome = cells
+        entries.append({
+            "date": d, "metric": m.group(2), "delta_pts": int(m.group(3)), "status": m.group(4),
+            "top_hypothesis": hyp_text, "top_confidence": conf,
+            "resolved": outcome != "_TBD_", "what_happened": outcome,
+        })
+    return entries
+
+
+def anomaly_connection_bullets(outcome_log_path, since, until):
+    """Feeds anomaly_diagnosis.py's output into this report: a confirmed outcome this
+    week becomes a real 'Changed' signal (a root cause got confirmed, which is
+    itself news); an unresolved diagnosis becomes the 'Watch next week' item, since
+    an open loop with a scored hypothesis attached is more concretely actionable
+    than a standing stakeholder open item that hasn't moved in weeks."""
+    entries = read_outcome_log_entries(outcome_log_path, since, until)
+    confirmed = next((e for e in entries if e["resolved"]), None)
+    unresolved = next((e for e in entries if not e["resolved"]), None)
+
+    changed_bullet = None
+    if confirmed:
+        changed_bullet = (f"Anomaly from {confirmed['date'].isoformat()} confirmed: "
+                           f"{confirmed['what_happened']} (top hypothesis was '{confirmed['top_hypothesis']}', "
+                           f"{confirmed['top_confidence']})")
+
+    watch_bullet = None
+    if unresolved:
+        watch_bullet = (f"Open anomaly diagnosis from {unresolved['date'].isoformat()} "
+                         f"({unresolved['metric']} moved {unresolved['delta_pts']:+d}pts): top hypothesis "
+                         f"'{unresolved['top_hypothesis']}' ({unresolved['top_confidence']}) — outcome not yet confirmed, "
+                         f"see outcome-log.md")
+    return changed_bullet, watch_bullet
+
+
 # ---------------------------------------------------------------- Watch next week
 
 def top_open_item(stakeholders_dir, priority=("raj", "marcus", "lena")):
@@ -221,27 +281,38 @@ def build_report(args, run_date):
 
     done = build_done_bullets(args.change_log, args.repo_dir, since, run_date)
 
+    anomaly_changed, anomaly_watch = anomaly_connection_bullets(args.outcome_log, since, run_date)
+
     changed = []
+    if anomaly_changed:
+        # a confirmed root cause is real news - it leads, ahead of the routine metric move
+        changed.append(anomaly_changed)
     retention_move = top_channel_move(this_week, last_week)
     if retention_move:
         if experiment_active:
             retention_move += " (week includes an active A/B test - see metric-pulse.md)"
         changed.append(retention_move)
 
-    fresh_theme = fresh_synthesis_entry(args.synthesis_log, since)
-    if fresh_theme:
-        changed.append(f"New user-feedback theme this week: {fresh_theme}")
-    else:
-        nudge_move = nudge_open_rate_move(args.nudges, users, this_week_id, last_week_id)
-        if nudge_move:
-            changed.append(nudge_move)
+    if len(changed) < 2:
+        fresh_theme = fresh_synthesis_entry(args.synthesis_log, since)
+        if fresh_theme:
+            changed.append(f"New user-feedback theme this week: {fresh_theme}")
         else:
-            standing = standing_top_nps_theme(args.nps)
-            if standing:
-                changed.append(f"No new feedback synthesized this week; standing top NPS theme is still: {standing}")
+            nudge_move = nudge_open_rate_move(args.nudges, users, this_week_id, last_week_id)
+            if nudge_move:
+                changed.append(nudge_move)
+            else:
+                standing = standing_top_nps_theme(args.nps)
+                if standing:
+                    changed.append(f"No new feedback synthesized this week; standing top NPS theme is still: {standing}")
 
-    who, item = top_open_item(args.stakeholders_dir)
-    watch = [f"{who}'s open item: {item}"] if who else ["No open items flagged in any stakeholder profile."]
+    if anomaly_watch:
+        # an open, scored diagnosis is more concretely actionable than a standing
+        # stakeholder open item that may not have moved in weeks
+        watch = [anomaly_watch]
+    else:
+        who, item = top_open_item(args.stakeholders_dir)
+        watch = [f"{who}'s open item: {item}"] if who else ["No open items flagged in any stakeholder profile."]
 
     return done[:3], changed[:2], watch[:1], {
         "this_week_cohort": this_week_id, "experiment_active": experiment_active,
@@ -288,6 +359,7 @@ def main():
     parser.add_argument("--nps", default=os.path.join(base_dir, "../02-research/nps-analysis.md"))
     parser.add_argument("--synthesis-log", default=os.path.join(base_dir, "../02-research/weekly-synthesis-log.md"))
     parser.add_argument("--stakeholders-dir", default=os.path.join(base_dir, "../04-team/stakeholders"))
+    parser.add_argument("--outcome-log", default=os.path.join(base_dir, "../outcome-log.md"))
     parser.add_argument("--repo-dir", default=os.path.join(base_dir, ".."))
     parser.add_argument("--reports-dir", default=os.path.join(base_dir, REPORTS_DIR_DEFAULT))
     parser.add_argument("--week", type=int, default=None)
