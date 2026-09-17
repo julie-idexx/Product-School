@@ -32,6 +32,16 @@ Three one-command skills exist for the tasks that repeat every week — check th
 - **`skills/research-synthesis.md`** — trigger: *"Run my weekly research synthesis for Streakly."* Reads whatever's new in `02-research/inbox/` (drop raw feedback/tickets/NPS exports there between runs) and synthesizes it. Says "nothing new" honestly if the inbox is empty. Saves to `02-research/weekly-synthesis-log.md`.
 - **`skills/competitive-pulse.md`** — trigger: *"Run my competitive pulse check for Streakly."* The one workflow that needs live web search rather than local files — checks Duolingo, Babbel, Elevate, Brilliant, and Streaks for material changes, cited to source. Saves to `02-research/competitive-pulse-log.md`.
 
+## Agent Stack
+
+Three chained agents in `agents/` — Module 6's autonomous stack, not one-command skills like above but scripts meant to run on a schedule (nightly / Monday 8am / Friday 4pm). All three ran against real data and each caught at least one real bug before being trusted — see each spec's "test run" section for what broke and why.
+
+- **`agents/metric_pulse.py`** ([spec](agents/metric-pulse.md)) — nightly Day-7 retention + streak-break rate monitor, by acquisition channel, alert at ±2pts WoW. Self-detects an active A/B test from the `variant` column and flags it rather than reporting a treatment effect as organic movement.
+- **`agents/weekly_insight.py`** ([spec](agents/weekly-insight.md)) — Friday 3-2-1 digest (Done / Changed / Watch), reusing `metric_pulse.py`'s math directly rather than recomputing it. Says "nothing new" honestly rather than relabeling a stale NPS theme as "changed this week."
+- **`agents/anomaly_diagnosis.py`** ([spec](agents/anomaly-diagnosis.md)) — chained off `metric_pulse.py --chain-anomaly`, fires *only* when an alert already crossed threshold. 5-step loop (threshold → decomposition → hypothesis → SQL/Slack → outcome-log), with an explicit stop at each gate. Step 3's hypothesis scoring is an admitted heuristic stand-in for a real reasoning step — swap it for a real LLM call before this runs unattended in production.
+
+`outcome-log.md` (project root) accumulates every triggered diagnosis with a `_TBD_` placeholder for "what actually happened" — check it before assuming a past alert was ever resolved.
+
 ## How I Want Claude to Work With Me
 
 - **Interview first:** ask clarifying questions before building.
