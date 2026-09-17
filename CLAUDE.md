@@ -24,6 +24,14 @@
 
 *Where to look for detail rather than re-deriving it: `docs/prd.md` (what's being built), `04-team/spec-readiness.md` (why the scope is what it is), `05-decide/metric-findings.md` + `data/metric-diagnosis.md` (what the pilot actually showed), `docs/recommendation-memo.md` (the ask to Marcus).*
 
+## Recurring Workflows
+
+Three one-command skills exist for the tasks that repeat every week — check these before treating a status update, research summary, or competitor check as a fresh task:
+
+- **`skills/friday-status.md`** — trigger: *"Run my Friday status update for Streakly."* Self-gathers Shipped/In Progress/Blocked from `git log` and stakeholder open items; no notes need to be dictated. Saves to `status-updates.md`.
+- **`skills/research-synthesis.md`** — trigger: *"Run my weekly research synthesis for Streakly."* Reads whatever's new in `02-research/inbox/` (drop raw feedback/tickets/NPS exports there between runs) and synthesizes it. Says "nothing new" honestly if the inbox is empty. Saves to `02-research/weekly-synthesis-log.md`.
+- **`skills/competitive-pulse.md`** — trigger: *"Run my competitive pulse check for Streakly."* The one workflow that needs live web search rather than local files — checks Duolingo, Babbel, Elevate, Brilliant, and Streaks for material changes, cited to source. Saves to `02-research/competitive-pulse-log.md`.
+
 ## How I Want Claude to Work With Me
 
 - **Interview first:** ask clarifying questions before building.
