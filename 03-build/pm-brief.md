@@ -2,7 +2,7 @@
 
 ## Source
 
-Grounded in [`research/interview-synthesis.md`](../research/interview-synthesis.md), [`research/nps-analysis.md`](../research/nps-analysis.md), [`research/competitive-matrix.md`](../research/competitive-matrix.md), and [`docs/decision-brief.md`](../docs/decision-brief.md) (approved by Marcus).
+Grounded in [`02-research/interview-synthesis.md`](../02-research/interview-synthesis.md), [`02-research/nps-analysis.md`](../02-research/nps-analysis.md), [`02-research/competitive-matrix.md`](../02-research/competitive-matrix.md), and [`docs/decision-brief.md`](../docs/decision-brief.md) (approved by Marcus).
 
 ## Persona
 
