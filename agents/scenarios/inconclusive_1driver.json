@@ -1,0 +1,10 @@
+{
+  "metric_name": "day7_retention",
+  "before": 0.39,
+  "after": 0.35,
+  "drivers": {
+    "streak_break_rate": {"before": 22, "after": 29},
+    "sessions_week1": {"before": 4.1, "after": 4.0},
+    "push_optin_rate": {"before": 54, "after": 53}
+  }
+}

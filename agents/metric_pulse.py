@@ -183,6 +183,13 @@ def main():
     parser.add_argument("--week", type=int, default=None,
                          help="Treat this cohort_week as 'this week' instead of the latest one present "
                               "(for backtesting / demoing against a specific past week)")
+    parser.add_argument("--chain-anomaly", action="store_true",
+                         help="If either alert fires, immediately run anomaly_diagnosis.py's 5-step loop "
+                              "using the real per-channel + streak-break-rate decomposition already "
+                              "computed here. No-op if neither alert fired - this is the 'only triggers "
+                              "on alert' chaining, not an unconditional second run.")
+    parser.add_argument("--outcome-log", default=None,
+                         help="Passed through to anomaly_diagnosis.py if --chain-anomaly fires")
     args = parser.parse_args()
 
     base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -229,6 +236,32 @@ def main():
             sys.exit(1)
         status = post_to_slack(webhook, digest)
         print(f"\n[posted to Slack, status {status}]")
+
+    if args.chain_anomaly:
+        if not (metrics["day7_alert"] or metrics["break_alert"]):
+            print("\n[--chain-anomaly: neither alert fired, anomaly_diagnosis not triggered]")
+        else:
+            import anomaly_diagnosis as ad
+            outcome_log = args.outcome_log or os.path.join(base_dir, "../outcome-log.md")
+            # Real decomposition: streak-break rate plus each channel's Day-7 rate,
+            # since that IS the actual metric tree this data supports - unlike the
+            # simulated scenarios, real data here has no push-opt-in or sessions
+            # fields, so generate_hypotheses() will have much less to work with.
+            # See agents/anomaly-diagnosis.md for why Step 3 is a heuristic stand-in.
+            drivers = {"streak_break_rate": {"before": round(last_week["overall"]["break"] * 100, 1),
+                                              "after": round(this_week["overall"]["break"] * 100, 1)}}
+            for ch in CHANNELS:
+                drivers[f"channel_{ch}"] = {
+                    "before": round(last_week["by_channel"][ch]["day7"] * 100, 1),
+                    "after": round(this_week["by_channel"][ch]["day7"] * 100, 1),
+                }
+            metric_name = "day7_retention" if metrics["day7_alert"] else "streak_break_rate"
+            before = last_week["overall"]["day7"] if metrics["day7_alert"] else last_week["overall"]["break"]
+            after = this_week["overall"]["day7"] if metrics["day7_alert"] else this_week["overall"]["break"]
+            print("\n[--chain-anomaly: alert fired, running anomaly_diagnosis]\n")
+            status, text = ad.run_diagnosis(metric_name, before, after, drivers, outcome_log)
+            print(text)
+            print(f"\n[anomaly_diagnosis status: {status}]")
 
 
 if __name__ == "__main__":
